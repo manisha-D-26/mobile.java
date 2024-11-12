@@ -1,0 +1,283 @@
+import java.io.*;
+import java.util.*;
+abstract class Staff {
+    private String name;
+    private int id;
+    
+    public Staff(String name, int id) {
+        this.name = name;
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public abstract String getRole();
+
+    public abstract void displayInfo();
+}
+class Doctor extends Staff {
+    private String specialty;
+
+    public Doctor(String name, int id, String specialty) {
+        super(name, id);
+        this.specialty = specialty;
+    }
+
+    public String getSpecialty() {
+        return specialty;
+    }
+
+    @Override
+    public String getRole() {
+        return "Doctor";
+    }
+
+    @Override
+    public void displayInfo() {
+        System.out.println("Doctor Name: " + getName() + ", ID: " + getId() + ", Specialty: " + specialty);
+    }
+}
+class Nurse extends Staff {
+    private String department;
+
+    public Nurse(String name, int id, String department) {
+        super(name, id);
+        this.department = department;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    @Override
+    public String getRole() {
+        return "Nurse";
+    }
+
+    @Override
+    public void displayInfo() {
+        System.out.println("Nurse Name: " + getName() + ", ID: " + getId() + ", Department: " + department);
+    }
+}
+class Admin extends Staff {
+    public Admin(String name, int id) {
+        super(name, id);
+    }
+
+    @Override
+    public String getRole() {
+        return "Admin";
+    }
+
+    @Override
+    public void displayInfo() {
+        System.out.println("Admin Name: " + getName() + ", ID: " + getId());
+    }
+}
+class Patient {
+    private String name;
+    private int id;
+    private String disease;
+
+    public Patient(String name, int id, String disease) {
+        this.name = name;
+        this.id = id;
+        this.disease = disease;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getDisease() {
+        return disease;
+    }
+
+    public void displayInfo() {
+        System.out.println("Patient Name: " + name + ", ID: " + id + ", Disease: " + disease);
+    }
+}
+class Hospital {
+    private List<Staff> staffList = new ArrayList<>();
+    private List<Patient> patientList = new ArrayList<>();
+    public void addStaff(Staff staff) {
+        staffList.add(staff);
+    }
+    public void addPatient(Patient patient) {
+        patientList.add(patient);
+    }
+    public void displayStaff() {
+        for (Staff staff : staffList) {
+            staff.displayInfo();
+        }
+    }
+    public void displayPatients() {
+        for (Patient patient : patientList) {
+            patient.displayInfo();
+        }
+    }
+    public void saveData() throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("hospital_data.txt"))) {
+            writer.write("Staff Data:\n");
+            for (Staff staff : staffList) {
+                writer.write(staff.getRole() + "," + staff.getName() + "," + staff.getId());
+                if (staff instanceof Doctor) {
+                    writer.write("," + ((Doctor) staff).getSpecialty());
+                } else if (staff instanceof Nurse) {
+                    writer.write("," + ((Nurse) staff).getDepartment());
+                }
+                writer.newLine();
+            }
+
+            writer.write("Patient Data:\n");
+            for (Patient patient : patientList) {
+                writer.write(patient.getName() + "," + patient.getId() + "," + patient.getDisease());
+                writer.newLine();
+            }
+        }
+    }
+    public void loadData() throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader("hospital_data.txt"));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.startsWith("Staff Data:")) {
+                while ((line = reader.readLine()) != null && !line.startsWith("Patient Data:")) {
+                    String[] parts = line.split(",");
+                    String role = parts[0];
+                    String name = parts[1];
+                    int id = Integer.parseInt(parts[2]);
+                    if (role.equals("Doctor")) {
+                        String specialty = parts[3];
+                        addStaff(new Doctor(name, id, specialty));
+                    } else if (role.equals("Nurse")) {
+                        String department = parts[3];
+                        addStaff(new Nurse(name, id, department));
+                    } else if (role.equals("Admin")) {
+                        addStaff(new Admin(name, id));
+                    }
+                }
+            }
+            if (line.startsWith("Patient Data:")) {
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    String name = parts[0];
+                    int id = Integer.parseInt(parts[1]);
+                    String disease = parts[2];
+                    addPatient(new Patient(name, id, disease));
+                }
+            }
+        }
+    }
+}
+public class HospitalManagementSystem {
+    private static Scanner scanner = new Scanner(System.in);
+    private static Hospital hospital = new Hospital();
+
+    public static void main(String[] args) {
+        try {
+            hospital.loadData();
+        } catch (IOException e) {
+            System.out.println("No previous data found.");
+        }
+        while (true) {
+            System.out.println("\n--- Hospital Management System ---");
+            System.out.println("1. Add Staff");
+            System.out.println("2. Add Patient");
+            System.out.println("3. View Staff");
+            System.out.println("4. View Patients");
+            System.out.println("5. Save Data");
+            System.out.println("6. Load Data");
+            System.out.println("7. Exit");
+
+            int choice = scanner.nextInt();
+            scanner.nextLine();  
+
+            switch (choice) {
+                case 1:
+                    addStaff();
+                    break;
+                case 2:
+                    addPatient();
+                    break;
+                case 3:
+                    hospital.displayStaff();
+                    break;
+                case 4:
+                    hospital.displayPatients();
+                    break;
+                case 5:
+                    saveData();
+                    break;
+                case 6:
+                    loadData();
+                    break;
+                case 7:
+                    System.out.println("Exiting...");
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Invalid choice, please try again.");
+            }
+        }
+    }
+    private static void addStaff() {
+        System.out.println("Enter role (Doctor/Nurse/Admin):");
+        String role = scanner.nextLine();
+        System.out.println("Enter name:");
+        String name = scanner.nextLine();
+        System.out.println("Enter ID:");
+        int id = scanner.nextInt();
+        scanner.nextLine();  
+
+        if (role.equalsIgnoreCase("Doctor")) {
+            System.out.println("Enter specialty:");
+            String specialty = scanner.nextLine();
+            hospital.addStaff(new Doctor(name, id, specialty));
+        } else if (role.equalsIgnoreCase("Nurse")) {
+            System.out.println("Enter department:");
+            String department = scanner.nextLine();
+            hospital.addStaff(new Nurse(name, id, department));
+        } else if (role.equalsIgnoreCase("Admin")) {
+            hospital.addStaff(new Admin(name, id));
+        } else {
+            System.out.println("Invalid role.");
+        }
+    }
+    private static void addPatient() {
+        System.out.println("Enter patient name:");
+        String name = scanner.nextLine();
+        System.out.println("Enter patient ID:");
+        int id = scanner.nextInt();
+        scanner.nextLine(); 
+        System.out.println("Enter disease:");
+        String disease = scanner.nextLine();
+
+        hospital.addPatient(new Patient(name, id, disease));
+    }
+    private static void saveData() {
+        try {
+            hospital.saveData();
+            System.out.println("Data saved successfully.");
+        } catch (IOException e) {
+            System.out.println("Error saving data.");
+        }
+    }
+    private static void loadData() {
+        try {
+            hospital.loadData();
+            System.out.println("Data loaded successfully.");
+        } catch (IOException e) {
+            System.out.println("Error loading data.");
+        }
+    }
+}
